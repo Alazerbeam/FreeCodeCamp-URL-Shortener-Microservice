@@ -16,7 +16,7 @@ app.use('/public', express.static(`${process.cwd()}/public`));
 app.use(bodyParser.urlencoded({ extended: false }));
 
 mongoose.connect(process.env.MONGO_URI)
-  .then(() => initializeCounter())
+  .then(() => resetDatabase())
   .catch(err => console.error(err));
 
 // Define schema
@@ -82,6 +82,12 @@ const findOrCreateUrl = async (url, done) => {
   }
 }
 
+const resetDatabase = async () => {
+  await ShortUrl.deleteMany({});
+  await Counter.deleteMany({});
+  await initializeCounter();
+}
+
 app.get('/', function(req, res) {
   res.sendFile(process.cwd() + '/views/index.html');
 });
@@ -93,9 +99,7 @@ app.get('/api/hello', function(req, res) {
 
 // for testing purposes
 app.get('/api/reset', async function(req, res) {
-  await ShortUrl.deleteMany({});
-  await Counter.deleteMany({});
-  await initializeCounter();
+  resetDatabase();
   res.send("Database cleared and counter reset!");
 });
 
