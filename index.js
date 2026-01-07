@@ -16,6 +16,8 @@ app.use('/public', express.static(`${process.cwd()}/public`));
 app.use(bodyParser.urlencoded({ extended: false }));
 
 mongoose.connect(process.env.MONGO_URI)
+  .then(() => initializeCounter())
+  .catch(err => console.error(err));
 
 // Define schema
 const shortUrlSchema = new mongoose.Schema({
@@ -69,12 +71,8 @@ const findOrCreateUrl = async (url, done) => {
 
     if (!doc) {
       const shortUrl = await getNextShortUrl();
-      console.log("Next shortUrl:", shortUrl);
       doc = new ShortUrl({original_url: url, short_url: shortUrl});
       doc = await doc.save();
-      console.log("Created new doc!");
-    } else {
-      console.log("Found previous doc!");
     }
 
     done(null, doc);
@@ -82,8 +80,6 @@ const findOrCreateUrl = async (url, done) => {
     done(err);
   }
 }
-
-initializeCounter();
 
 app.get('/', function(req, res) {
   res.sendFile(process.cwd() + '/views/index.html');
@@ -125,7 +121,7 @@ app.post('/api/shorturl', function(req, res) {
     hostname, 
     (err) => {
       if (err) {
-        return res.json({error: "Invalid Hostname"});
+        return res.json({error: 'invalid url'});
       }
 
       findOrCreateUrl(inputUrl, function (err, data) {
