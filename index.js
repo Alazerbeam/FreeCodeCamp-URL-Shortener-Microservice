@@ -100,9 +100,9 @@ app.get('/api/reset', async function(req, res) {
 
 app.get('/api/shorturl/:id?', function(req, res) {
   // check database for record with the shorturl
-  findOriginalFromShort(req.params.id, function(err, data) {
+  findOriginalFromShort(Number(req.params.id), function(err, data) {
     if (err) return res.json({error: 'Database error'});
-    if (!data) return res.json({error: 'No short URL found for the given input'})
+    if (!data) return res.json({error: 'invalid url'})
     res.redirect(data.original_url);
   });
 });
