@@ -77,6 +77,7 @@ const findOrCreateUrl = async (url, done) => {
 
     done(null, doc);
   } catch (err) {
+    console.error(err)
     done(err);
   }
 }
@@ -99,33 +100,31 @@ app.get('/api/reset', async function(req, res) {
 });
 
 app.get('/api/shorturl/:id', async function(req, res) {
-  // check database for record with the shorturl
+  console.log("GET URL");
+  console.log('req.body:', req.body);
+  console.log('req.params:', req.params);
+  console.log('req.query:', req.query);
+
   const shortUrlId = Number(req.params.id);
 
   if (isNaN(shortUrlId)) {
     return res.json({error: 'invalid url'});
   }
 
-  // findOriginalFromShort(shortUrlId, function(err, data) {
-  //   if (err) return res.json({error: 'Database error'});
-  //   if (!data) return res.json({error: 'invalid url'})
-  //   res.redirect(data.original_url);
-  // });
-
-  try {
-    const data = await ShortUrl.findOne({short_url: shortUrlId});
-
-    if (!data) {
-      return res.json({error: 'invalid url'});
-    }
-
+  findOriginalFromShort(shortUrlId, function(err, data) {
+    if (err) return res.json({error: 'Database error'});
+    if (!data) return res.json({error: 'invalid url'});
+    console.log(data);
     res.redirect(data.original_url);
-  } catch (err) {
-    res.json({error: 'Database error'});
-  }
+  });
 });
 
 app.post('/api/shorturl', function(req, res) {
+  console.log("POST URL");
+  console.log('req.body:', req.body);
+  console.log('req.params:', req.params);
+  console.log('req.query:', req.query);
+
   const inputUrl = req.body.url;
 
   let hostname;
@@ -144,6 +143,7 @@ app.post('/api/shorturl', function(req, res) {
 
       findOrCreateUrl(inputUrl, function (err, data) {
         if (err) return res.json({error: "Database error"});
+        console.log(data);
         res.json({original_url: data.original_url, short_url: data.short_url});
       });
     }
