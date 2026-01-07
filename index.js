@@ -21,43 +21,16 @@ mongoose.connect(process.env.MONGO_URI)
 
 // Define schema
 const shortUrlSchema = new mongoose.Schema({
-  original_url: String,
-  short_url: Number
+  original_url: {
+    type: String,
+    required: true
+  }
 });
 const ShortUrl = mongoose.model("ShortUrl", shortUrlSchema);
 
-const counterSchema = new mongoose.Schema({
-  counter: Number
-})
-const Counter = mongoose.model("Counter", counterSchema);
-
-// Define functions to interact with Counter
-const initializeCounter = async () => {
-  try {
-    const exists = await Counter.findOne();
-    if (!exists) {
-      const counter = new Counter({
-        counter: 0
-      });
-      await counter.save();
-    }
-  } catch (err) {
-    console.error(err);
-  }
-}
-
-const getNextShortUrl = async () => {
-  const updated = await Counter.findOneAndUpdate(
-    {},
-    {$inc: {counter: 1}},
-    {new: true, upsert: true}
-  );
-  return updated.counter;
-}
-
 const findOriginalFromShort = async (shortUrl, done) => {
   try {
-    const data = await ShortUrl.findOne({short_url: shortUrl});
+    const data = await ShortUrl.findById(shortUrl);
     done(null, data);
   } catch (err) {
     console.error(err);
@@ -70,8 +43,7 @@ const findOrCreateUrl = async (url, done) => {
     let doc = await ShortUrl.findOne({original_url: url});
 
     if (!doc) {
-      const shortUrl = await getNextShortUrl();
-      doc = new ShortUrl({original_url: url, short_url: shortUrl});
+      doc = new ShortUrl({original_url: url});
       doc = await doc.save();
     }
 
@@ -84,8 +56,6 @@ const findOrCreateUrl = async (url, done) => {
 
 const resetDatabase = async () => {
   await ShortUrl.deleteMany({});
-  await Counter.deleteMany({});
-  await initializeCounter();
 }
 
 app.get('/', function(req, res) {
@@ -100,7 +70,7 @@ app.get('/api/hello', function(req, res) {
 // for testing purposes
 app.get('/api/reset', async function(req, res) {
   resetDatabase();
-  res.send("Database cleared and counter reset!");
+  res.send("Database cleared!");
 });
 
 app.get('/api/shorturl/:id', async function(req, res) {
@@ -109,9 +79,9 @@ app.get('/api/shorturl/:id', async function(req, res) {
   console.log('req.params:', req.params);
   console.log('req.query:', req.query);
 
-  const shortUrlId = Number(req.params.id);
+  const shortUrlId = req.params.id;
 
-  if (isNaN(shortUrlId)) {
+  if (!mongoose.Types.ObjectId.isValid(shortUrlId)) {
     return res.json({error: 'invalid url'});
   }
 
@@ -148,7 +118,7 @@ app.post('/api/shorturl', function(req, res) {
       findOrCreateUrl(inputUrl, function (err, data) {
         if (err) return res.json({error: "Database error"});
         console.log(data);
-        res.json({original_url: data.original_url, short_url: data.short_url});
+        res.json({original_url: data.original_url, short_url: data._id});
       });
     }
   );
