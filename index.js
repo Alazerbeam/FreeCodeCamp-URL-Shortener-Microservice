@@ -98,13 +98,31 @@ app.get('/api/reset', async function(req, res) {
   res.send("Database cleared and counter reset!");
 });
 
-app.get('/api/shorturl/:id?', function(req, res) {
+app.get('/api/shorturl/:id', async function(req, res) {
   // check database for record with the shorturl
-  findOriginalFromShort(Number(req.params.id), function(err, data) {
-    if (err) return res.json({error: 'Database error'});
-    if (!data) return res.json({error: 'invalid url'})
+  const shortUrlId = Number(req.params.id);
+
+  if (isNaN(shortUrlId)) {
+    return res.json({error: 'invalid url'});
+  }
+
+  // findOriginalFromShort(shortUrlId, function(err, data) {
+  //   if (err) return res.json({error: 'Database error'});
+  //   if (!data) return res.json({error: 'invalid url'})
+  //   res.redirect(data.original_url);
+  // });
+
+  try {
+    const data = await ShortUrl.findOne({short_url: shortUrlId});
+
+    if (!data) {
+      return res.json({error: 'invalid url'});
+    }
+
     res.redirect(data.original_url);
-  });
+  } catch (err) {
+    res.json({error: 'Database error'});
+  }
 });
 
 app.post('/api/shorturl', function(req, res) {
